@@ -12,7 +12,7 @@
   --color-slate-300: #a8bdd4;
   --color-slate-200: #cdd8e7;
   --color-slate-100: #e8edf4;
-  
+
   --color-x-segment: #94A3B8;
   --color-y-segment: #3B82F6;
   --color-y-segment-light: rgba(59, 130, 246, 0.15);
@@ -24,7 +24,7 @@
   --color-failure-glow: rgba(239, 68, 68, 0.2);
   --color-accent: #8B5CF6;
   --color-accent-glow: rgba(139, 92, 246, 0.15);
-  
+
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
@@ -77,7 +77,7 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -556,13 +556,16 @@ input[type="range"]::-moz-range-thumb {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(0, 212, 255, 0.15);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 212, 255, 0.3);
 }
@@ -570,52 +573,124 @@ input[type="range"]::-moz-range-thumb {
 /* ── Keyframe Animations ─────────────────────────────────── */
 
 @keyframes bounce-y {
-  0%   { transform: scale(0.8) translateY(4px); opacity: 0; }
-  60%  { transform: scale(1.08) translateY(-3px); opacity: 1; }
-  80%  { transform: scale(0.97) translateY(1px); }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% {
+    transform: scale(0.8) translateY(4px);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.08) translateY(-3px);
+    opacity: 1;
+  }
+
+  80% {
+    transform: scale(0.97) translateY(1px);
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.5); }
-  70%  { box-shadow: 0 0 0 10px rgba(0, 212, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 212, 255, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 212, 255, 0);
+  }
 }
 
 @keyframes slide-in-verdict {
-  0%   { opacity: 0; transform: translateY(-16px) scale(0.97); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes celebrate-ping {
-  0%   { transform: scale(1); opacity: 1; }
-  75%  { transform: scale(1.8); opacity: 0; }
-  100% { transform: scale(1.8); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  75% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
 }
 
 @keyframes fill-progress {
-  from { width: 0; }
-  to   { width: 100%; }
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
 }
 
 @keyframes contradiction-flash {
-  0%, 100% { border-color: rgba(239, 68, 68, 0.3); }
-  50% { border-color: rgba(239, 68, 68, 0.8); box-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
+
+  0%,
+  100% {
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  50% {
+    border-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+  }
 }
 
 @keyframes success-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); }
-  50%       { box-shadow: 0 0 40px rgba(0, 255, 136, 0.45); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(0, 255, 136, 0.45);
+  }
 }
 
 @keyframes loop-pulse {
-  0%, 100% { opacity: 0.7; }
-  50%       { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes auto-solve-shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
 
 /* ── Animation Classes ───────────────────────────────────── */
@@ -637,14 +712,12 @@ input[type="range"]::-moz-range-thumb {
 
 /* ── Auto-Solve Shimmer Button ───────────────────────────── */
 .auto-solve-btn {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 212, 255, 0.1) 0%,
-    rgba(139, 92, 246, 0.2) 25%,
-    rgba(0, 255, 136, 0.1) 50%,
-    rgba(139, 92, 246, 0.2) 75%,
-    rgba(0, 212, 255, 0.1) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(0, 212, 255, 0.1) 0%,
+      rgba(139, 92, 246, 0.2) 25%,
+      rgba(0, 255, 136, 0.1) 50%,
+      rgba(139, 92, 246, 0.2) 75%,
+      rgba(0, 212, 255, 0.1) 100%);
   background-size: 200% auto;
   border: 1px solid rgba(0, 212, 255, 0.25);
   color: #00d4ff;
@@ -695,6 +768,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* ── Print Styles ────────────────────────────────────────── */
 @media print {
+
   body::before,
   body::after {
     display: none;
