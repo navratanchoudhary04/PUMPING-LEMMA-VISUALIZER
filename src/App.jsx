@@ -12,15 +12,15 @@ import { getValidator } from './engine/validators';
 
 // ── Initial wizard state ───────────────────────────────────
 const INITIAL_STATE = {
-  activeLanguage:     'anbn',
-  p_value:            4,
-  inputString:        '',
-  availableSplits:    [],
+  activeLanguage: 'anbn',
+  p_value: 4,
+  inputString: '',
+  availableSplits: [],
   selectedSplitIndex: 0,
-  pumpPower:          1,
-  appState:           'SETUP',
-  contradictions:     {},  // { splitIndex: pumpPower that contradicts }
-  customLanguage:     null, // custom language object when activeLanguage === 'custom'
+  pumpPower: 1,
+  appState: 'SETUP',
+  contradictions: {},  // { splitIndex: pumpPower that contradicts }
+  customLanguage: null, // custom language object when activeLanguage === 'custom'
 };
 
 // Smallest delay promise helper
@@ -48,7 +48,7 @@ export default function App() {
   const handleLanguageChange = useCallback((id) => {
     updateState({
       activeLanguage: id,
-      inputString:    '',
+      inputString: '',
       availableSplits: [],
       contradictions: {},
       // Don't clear customLanguage when switching back to preset
@@ -99,11 +99,11 @@ export default function App() {
   const goToPartition = useCallback(() => {
     const splits = generateValidSplits(state.inputString, state.p_value);
     updateState({
-      appState:           'PARTITION',
-      availableSplits:    splits,
+      appState: 'PARTITION',
+      availableSplits: splits,
       selectedSplitIndex: 0,
-      pumpPower:          1,
-      contradictions:     {},
+      pumpPower: 1,
+      contradictions: {},
     });
   }, [state.inputString, state.p_value, updateState]);
 
@@ -115,11 +115,11 @@ export default function App() {
     // Append to session history before navigating
     const lang = getValidator(state.activeLanguage, state.customLanguage);
     const entry = {
-      language:          lang?.name || 'Unknown',
-      string:            state.inputString,
+      language: lang?.name || 'Unknown',
+      string: state.inputString,
       contradictionCount: Object.keys(state.contradictions).length,
-      splitCount:        state.availableSplits.length,
-      timestamp:         new Date().toLocaleTimeString(),
+      splitCount: state.availableSplits.length,
+      timestamp: new Date().toLocaleTimeString(),
     };
     setSessionHistory((prev) => [...prev, entry]);
     updateState({ appState: 'PROOF' });
@@ -138,7 +138,7 @@ export default function App() {
 
     // Pre-compute everything synchronously
     const suggestedStr = lang.generate(state.p_value);
-    const splits       = generateValidSplits(suggestedStr, state.p_value);
+    const splits = generateValidSplits(suggestedStr, state.p_value);
 
     // Find contradiction i for each split (cap at i=10)
     const preContradictions = {};
@@ -160,15 +160,15 @@ export default function App() {
 
     // ── Scheduled animation sequence ──
     const schedule = [
-      { delay: 0,    update: { appState: 'INPUT', inputString: suggestedStr } },
+      { delay: 0, update: { appState: 'INPUT', inputString: suggestedStr } },
       {
         delay: 900,
         update: {
-          appState:           'PARTITION',
-          availableSplits:    splits,
+          appState: 'PARTITION',
+          availableSplits: splits,
           selectedSplitIndex: 0,
-          pumpPower:          1,
-          contradictions:     {},
+          pumpPower: 1,
+          contradictions: {},
         },
       },
       { delay: 1700, update: { appState: 'PUMP' } },
@@ -184,8 +184,8 @@ export default function App() {
         delay: 1700 + (idx + 1) * 700,
         update: {
           selectedSplitIndex: idx,
-          pumpPower:          preContradictions[idx] ?? 2,
-          contradictions:     { ...accumulated },
+          pumpPower: preContradictions[idx] ?? 2,
+          contradictions: { ...accumulated },
         },
       });
     }
@@ -212,11 +212,11 @@ export default function App() {
       setTimeout(() => {
         if (autoSolveAbortRef.current) return;
         const entry = {
-          language:           lang.name,
-          string:             suggestedStr,
+          language: lang.name,
+          string: suggestedStr,
           contradictionCount: Object.keys(preContradictions).length,
-          splitCount:         splits.length,
-          timestamp:          new Date().toLocaleTimeString(),
+          splitCount: splits.length,
+          timestamp: new Date().toLocaleTimeString(),
         };
         setSessionHistory((prev) => [...prev, entry]);
         setState((prev) => ({ ...prev, appState: 'PROOF' }));
