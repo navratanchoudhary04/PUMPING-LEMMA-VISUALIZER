@@ -9,8 +9,7 @@
 
 **An interactive, mathematically rigorous visualizer for proving languages are non-regular using the Pumping Lemma.**
 
-🔗 **Live Demo:** [Open App](https://navratanchaudhary04.github.io/PUMPING-LEMMA-VISUALIZER/)
-👉 https://navratanchaudhary04.github.io/PUMPING-LEMMA-VISUALIZER/
+🔗 **Live Demo:** [Open App](https://navratanchaudhary04.github.io/PUMPING-LEMMA-VISUALIZER/)👉 https://navratanchaudhary04.github.io/PUMPING-LEMMA-VISUALIZER/
 
 
 ---
