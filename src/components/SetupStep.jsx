@@ -91,10 +91,7 @@ export default function SetupStep({
               style={{ minHeight: '130px' }}
             >
               <div className="checkmark-badge">✓</div>
-              <span className={badge.cls} style={{ position: 'absolute', top: '0.65rem', left: '0.65rem' }}>
-                {badge.label}
-              </span>
-              <div className="mt-6 mb-2" style={{ fontSize: '1.05em' }}>
+              <div className="mt-3 mb-2" style={{ fontSize: '1.05em' }}>
                 <KaTeXBlock latex={lang.latex} displayMode={false} />
               </div>
               <p className="text-body" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
@@ -161,9 +158,6 @@ export default function SetupStep({
             <div className="flex items-center gap-3 flex-wrap">
               <div className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-purple)' }} />
               <h3 className="text-h3">Language Details</h3>
-              <span className={BADGE[String(selectedPreset.isRegular)]?.cls ?? 'badge-custom'} style={{ marginLeft: 'auto' }}>
-                {selectedPreset.isRegular ? 'Regular' : 'Non-Regular'}
-              </span>
             </div>
             <div className="text-body" style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
               {selectedPreset.explanation}
