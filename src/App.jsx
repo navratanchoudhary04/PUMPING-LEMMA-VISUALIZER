@@ -7,7 +7,7 @@ import PartitionStep from './components/PartitionStep';
 import PumpStep from './components/PumpStep';
 import ProofStep from './components/ProofStep';
 import TheoryPanel from './components/TheoryPanel';
-import { generateValidSplits, pumpString } from './engine/splitter';
+import { generateValidSplits } from './engine/splitter';
 import { getValidator } from './engine/validators';
 
 // ── Initial wizard state ───────────────────────────────────
@@ -97,7 +97,11 @@ export default function App() {
   }, [updateState]);
 
   const goToPartition = useCallback(() => {
-    const splits = generateValidSplits(state.inputString, state.p_value);
+    const splits = generateValidSplits(
+      state.inputString,
+      state.p_value,
+      activeValidator?.validate ?? null
+    );
     updateState({
       appState: 'PARTITION',
       availableSplits: splits,
@@ -105,7 +109,7 @@ export default function App() {
       pumpPower: 1,
       contradictions: {},
     });
-  }, [state.inputString, state.p_value, updateState]);
+  }, [state.inputString, state.p_value, activeValidator, updateState]);
 
   const goToPump = useCallback(() => {
     updateState({ appState: 'PUMP', pumpPower: 1 });
@@ -138,20 +142,13 @@ export default function App() {
 
     // Pre-compute everything synchronously
     const suggestedStr = lang.generate(state.p_value);
-    const splits = generateValidSplits(suggestedStr, state.p_value);
+    const splits = generateValidSplits(suggestedStr, state.p_value, lang.validate);
 
-    // Find contradiction i for each split (cap at i=10)
+    // Use precomputed contradictingI from each split
     const preContradictions = {};
     splits.forEach((split, idx) => {
-      for (let i = 0; i <= 10; i++) {
-        if (i === 1) continue; // i=1 always keeps the string in L
-        const pumped = pumpString(split.x, split.y, split.z, i);
-        let inL = true;
-        try { inL = lang.validate(pumped); } catch { inL = false; }
-        if (!inL) {
-          preContradictions[idx] = i;
-          break;
-        }
+      if (split.contradictingI !== null && split.contradictingI !== undefined) {
+        preContradictions[idx] = split.contradictingI;
       }
     });
 
@@ -238,56 +235,46 @@ export default function App() {
         overflowX: 'hidden',
       }}
     >
-      {/* ── Header (sticky) ── */}
+      {/* ── Header ── */}
       <header
-        className="border-b border-slate-800/60 backdrop-blur-xl no-print"
+        className="border-b no-print"
         style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          background: 'rgba(10,14,26,0.85)',
+          position: 'sticky', top: 0, zIndex: 50,
+          background: 'rgba(7,9,15,0.9)',
+          backdropFilter: 'blur(24px)',
+          borderColor: 'rgba(0,212,255,0.07)',
         }}
       >
-        <div
-          className="mx-auto px-5 sm:px-8 lg:px-12 py-3 flex items-center justify-between"
-          style={{ maxWidth: '1200px' }}
-        >
+        <div className="px-6 sm:px-10 lg:px-16 py-3 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-              style={{
-                background: 'linear-gradient(135deg, #0ea5e9, #7c3aed)',
-                boxShadow: '0 0 16px rgba(14,165,233,0.3)',
-              }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm"
+              style={{ background: 'linear-gradient(135deg, #00d4ff, #bf5fff)', boxShadow: '0 0 20px rgba(0,212,255,0.3)' }}
             >
               PL
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-100 tracking-tight">
+              <h1 className="font-bold text-slate-100 tracking-tight" style={{ fontSize: '1rem' }}>
                 Pumping Lemma Visualizer
               </h1>
-              <p className="text-[10px] text-slate-600 tracking-widest uppercase">
-                Mathematical Laboratory
+              <p className="text-slate-600 tracking-widest uppercase" style={{ fontSize: '0.6rem' }}>
+                Theory of Computation · Interactive Proof Engine
               </p>
             </div>
           </div>
 
-          {/* Header actions */}
+          {/* Actions */}
           <div className="flex items-center gap-3">
-            {/* Auto-solve button (shown during SETUP) */}
             {state.appState === 'SETUP' && (
-              <button
-                className="auto-solve-btn"
-                onClick={handleAutoSolve}
-                title="Auto-solve: animates the full proof for the current language"
-              >
-                ▶ Show Me How
+              <button className="auto-solve-btn" onClick={handleAutoSolve} title="Auto-solve demo">
+                ▶ Auto Demo
               </button>
             )}
             <button
               onClick={handleReset}
-              className="text-xs text-slate-600 hover:text-slate-300 transition-colors font-mono cursor-pointer"
+              className="text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+              style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}
             >
               [reset]
             </button>
@@ -295,32 +282,29 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Stepper (sticky below header) ── */}
+      {/* ── Stepper ── */}
       <div
         className="no-print"
         style={{
-          position: 'sticky',
-          top: '57px',
-          zIndex: 40,
-          background: 'rgba(10,14,26,0.9)',
-          backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(59,130,246,0.06)',
+          position: 'sticky', top: '57px', zIndex: 40,
+          background: 'rgba(7,9,15,0.92)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(0,212,255,0.05)',
         }}
       >
-        <div className="mx-auto px-5 sm:px-8 lg:px-12" style={{ maxWidth: '1200px' }}>
+        <div className="px-6 sm:px-10 lg:px-16">
           <Stepper currentStep={state.appState} />
         </div>
       </div>
 
-      {/* ── Main Content ── */}
+      {/* ── Main Content — full width ── */}
       <main
         style={{
           flex: 1,
-          maxWidth: '1200px',
           width: '100%',
-          margin: '0 auto',
-          padding: '2rem 1.25rem 4rem',
+          padding: '2.5rem 1.5rem 5rem',
         }}
+        className="px-6 sm:px-10 lg:px-16"
       >
         <AnimatePresence mode="wait">
           {state.appState === 'SETUP' && (
@@ -335,7 +319,6 @@ export default function App() {
               onNext={goToInput}
             />
           )}
-
           {state.appState === 'INPUT' && (
             <InputStep
               key="input"
@@ -347,7 +330,6 @@ export default function App() {
               onBack={() => goBack('SETUP')}
             />
           )}
-
           {state.appState === 'PARTITION' && (
             <PartitionStep
               key="partition"
@@ -360,7 +342,6 @@ export default function App() {
               onBack={() => goBack('INPUT')}
             />
           )}
-
           {state.appState === 'PUMP' && (
             <PumpStep
               key="pump"
@@ -378,7 +359,6 @@ export default function App() {
               onBack={() => goBack('PARTITION')}
             />
           )}
-
           {state.appState === 'PROOF' && (
             <ProofStep
               key="proof"
@@ -397,16 +377,17 @@ export default function App() {
 
       {/* ── Footer ── */}
       <footer
-        className="border-t border-slate-800/40 py-4 text-center no-print"
-        style={{ borderTop: '1px solid rgba(59,130,246,0.06)' }}
+        className="py-4 text-center no-print"
+        style={{ borderTop: '1px solid rgba(0,212,255,0.05)' }}
       >
-        <p className="text-[10px] text-slate-700 tracking-wider">
-          PUMPING LEMMA VISUALIZER &middot; THEORY OF COMPUTATION &middot; BTECH PROJECT
+        <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+          PUMPING LEMMA VISUALIZER · THEORY OF COMPUTATION · BTECH PROJECT
         </p>
       </footer>
 
-      {/* ── Theory Panel (floating) ── */}
+      {/* ── Theory FAB ── */}
       <TheoryPanel currentStep={state.appState} />
     </div>
   );
 }
+

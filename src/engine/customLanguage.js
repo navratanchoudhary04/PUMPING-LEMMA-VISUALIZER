@@ -1,100 +1,259 @@
 /**
- * Custom Language Factory
+ * Custom Language Engine v2.0
  *
- * Creates a validator-compatible language object from:
- *   - A description string
- *   - An alphabet array
- *   - A validator function body (string) that receives `s` and returns boolean
- *
- * The validator body is compiled with `new Function('s', code)` inside try/catch.
+ * Supports:
+ *  - JS validator code (with helper injection)
+ *  - Regex mode
+ *  - Template-based presets
  */
+
+import { isPrime, isPerfectSquare, isFactorial } from './validators';
+
+// ── Helper functions injected into user validator scope ──────────────
+const HELPERS = {
+  countChar: (s, c) => s.split('').filter(ch => ch === c).length,
+  isPrime,
+  isPerfectSquare,
+  isFactorial,
+  allSame: (s) => s.length > 0 && s.split('').every(c => c === s[0]),
+  isOrdered: (s, ...chars) => {
+    let idx = 0;
+    for (const c of s) {
+      while (idx < chars.length && chars[idx] !== c) idx++;
+      if (idx >= chars.length) return false;
+    }
+    return true;
+  },
+};
 
 /**
- * @param {object} opts
- * @param {string}   opts.description   - Human-readable / LaTeX description
- * @param {string[]} opts.alphabet       - Array of valid characters, e.g. ['a','b']
- * @param {string}   opts.validatorCode  - Function body; receives arg `s`, returns boolean
- * @returns {{ lang: object|null, error: string|null }}
+ * Safely execute user-provided validator code.
+ * Returns { result: boolean, error: string|null }
  */
-export function buildCustomLanguage({ description, alphabet, validatorCode }) {
-  // ── Compile the validator ───────────────────────────────
-  let compiledFn = null;
+export function testCustomValidator(code, str) {
   try {
-    // Wrap the user code in a function that receives `s`
-    // eslint-disable-next-line no-new-func
-    compiledFn = new Function('s', validatorCode);
-    // Quick smoke test — should not throw
-    compiledFn('');
-  } catch (e) {
-    return { lang: null, error: `Validator error: ${e.message}` };
+    const fn = new Function(
+      's',
+      'countChar', 'isPrime', 'isPerfectSquare', 'isFactorial', 'allSame', 'isOrdered',
+      code
+    );
+    const result = fn(
+      str,
+      HELPERS.countChar, HELPERS.isPrime, HELPERS.isPerfectSquare,
+      HELPERS.isFactorial, HELPERS.allSame, HELPERS.isOrdered
+    );
+    return { result: Boolean(result), error: null };
+  } catch (err) {
+    return { result: false, error: err.message };
   }
+}
 
-  // ── Safe wrapper around the compiled function ───────────
-  const safeFn = (str) => {
-    try {
-      const result = compiledFn(str);
-      return Boolean(result);
-    } catch {
-      return false;
-    }
-  };
+/**
+ * Build a custom language object from user inputs.
+ * Returns { lang, error }
+ */
+export function buildCustomLanguage({ description, alphabet, validatorCode, isRegular = false, theoryNote = '' }) {
+  if (!description.trim()) return { lang: null, error: 'Description is required.' };
+  if (!alphabet || alphabet.length === 0) return { lang: null, error: 'Alphabet must have at least one symbol.' };
+  if (!validatorCode.trim()) return { lang: null, error: 'Validator code is required.' };
 
-  // ── Smart generate: tries many patterns to find one ≥ p ─
-  const safeGenerate = (p) => {
-    const a = alphabet[0] || 'a';
-    const b = alphabet[1] || '';
-    const c = alphabet[2] || '';
-
-    // Try typical educational patterns
-    for (let n = 1; n <= 30; n++) {
-      const candidates = [
-        a.repeat(n) + b.repeat(n) + c.repeat(n),    // aⁿbⁿcⁿ
-        a.repeat(n) + b.repeat(n),                   // aⁿbⁿ
-        a.repeat(n * n),                             // aⁿ²
-        a.repeat(n) + b.repeat(n) + b.repeat(n) + a.repeat(n), // palindrome-like
-        a.repeat(2 * n) + b.repeat(2 * n),           // 2n variant
-      ];
-      for (const cand of candidates) {
-        if (cand.length >= p && safeFn(cand)) return cand;
-      }
-    }
-    // Last resort: return something of length p using first alphabet symbol
-    return (alphabet[0] || 'a').repeat(p);
-  };
-
-  // ── Build LaTeX display string ──────────────────────────
-  const latexDesc = description
-    ? description.replace(/aⁿ/g, 'a^n').replace(/bⁿ/g, 'b^n').replace(/cⁿ/g, 'c^n')
-    : 'L = \\{\\text{custom}\\}';
+  // Test that the code compiles
+  try {
+    new Function('s', 'countChar', 'isPrime', 'isPerfectSquare', 'isFactorial', 'allSame', 'isOrdered', validatorCode);
+  } catch (err) {
+    return { lang: null, error: `Syntax error: ${err.message}` };
+  }
 
   const lang = {
     id: 'custom',
-    name: 'Custom',
-    displayName: description || 'Custom',
-    latex: latexDesc,
-    description: description || 'User-defined language',
-    alphabet: alphabet.length > 0 ? alphabet : ['a'],
-    validate: safeFn,
-    generate: safeGenerate,
-    explanation: `Custom language defined by user-supplied validator.`,
-    validationHint: description || 'Must satisfy the user-defined membership condition',
-    validatorCode,
+    name: description,
+    displayName: 'Custom',
+    latex: `L = \\{\\text{${description}}\\}`,
+    description,
+    alphabet,
+    isRegular,
+    theoryNote,
+    validate(s) {
+      return testCustomValidator(validatorCode, s).result;
+    },
+    generate(p) {
+      return alphabet[0].repeat(p + 1);
+    },
+    explanation: `Custom validator: ${validatorCode.slice(0, 80)}...`,
+    validationHint: description,
   };
 
   return { lang, error: null };
 }
 
 /**
- * Test a custom validator code string on a specific string.
- * Returns { result: boolean|null, error: string|null }
+ * Build a custom language from a regex string.
  */
-export function testCustomValidator(validatorCode, testString) {
+export function buildRegexLanguage({ description, alphabet, regexStr, isRegular = true }) {
+  let regex;
   try {
-    // eslint-disable-next-line no-new-func
-    const fn = new Function('s', validatorCode);
-    const result = Boolean(fn(testString));
-    return { result, error: null };
-  } catch (e) {
-    return { result: null, error: e.message };
+    regex = new RegExp(regexStr);
+  } catch (err) {
+    return { lang: null, error: `Invalid regex: ${err.message}` };
   }
+
+  const lang = {
+    id: 'custom',
+    name: description || `/${regexStr}/`,
+    displayName: 'Custom (Regex)',
+    latex: `L = \\{w \\mid w \\text{ matches } /${regexStr}/\\}`,
+    description: description || `Strings matching /${regexStr}/`,
+    alphabet: alphabet || ['a', 'b'],
+    isRegular,
+    theoryNote: isRegular
+      ? 'This is a regular language — pumping keeps strings in L.'
+      : 'User-declared non-regular.',
+    validate: (s) => regex.test(s),
+    generate: (p) => (alphabet || ['a'])[0].repeat(p + 1),
+    explanation: `Validates using regex: /${regexStr}/`,
+    validationHint: `Must match /${regexStr}/`,
+  };
+
+  return { lang, error: null };
 }
+
+// ── Template catalogue ────────────────────────────────────────────────
+
+export const CUSTOM_TEMPLATES = [
+  // NON-REGULAR
+  {
+    id: 'tpl_anbn',
+    label: 'aⁿbⁿ',
+    category: 'Non-Regular',
+    description: 'L = { aⁿbⁿ | n ≥ 1 }',
+    alphabet: 'a, b',
+    isRegular: false,
+    theoryNote: 'Pumping y (in a-prefix) changes #a\'s ≠ #b\'s → contradiction.',
+    code: `const as = countChar(s, 'a');
+const bs = countChar(s, 'b');
+return /^a+b+$/.test(s) && as === bs;`,
+  },
+  {
+    id: 'tpl_anbncn',
+    label: 'aⁿbⁿcⁿ',
+    category: 'Non-Regular',
+    description: 'L = { aⁿbⁿcⁿ | n ≥ 1 }',
+    alphabet: 'a, b, c',
+    isRegular: false,
+    theoryNote: 'Not even context-free! y can span only one symbol type.',
+    code: `const as = countChar(s, 'a');
+const bs = countChar(s, 'b');
+const cs = countChar(s, 'c');
+return /^a+b+c+$/.test(s) && as === bs && bs === cs;`,
+  },
+  {
+    id: 'tpl_anbn2',
+    label: 'aⁿb²ⁿ',
+    category: 'Non-Regular',
+    description: 'L = { aⁿb²ⁿ | n ≥ 1 }',
+    alphabet: 'a, b',
+    isRegular: false,
+    theoryNote: 'Pumping y changes the 1:2 ratio of a\'s to b\'s.',
+    code: `const as = countChar(s, 'a');
+const bs = countChar(s, 'b');
+return /^a+b+$/.test(s) && bs === 2 * as;`,
+  },
+  {
+    id: 'tpl_palindrome',
+    label: 'Even Palindromes (wwᴿ)',
+    category: 'Non-Regular',
+    description: 'L = { wwᴿ | w ∈ {a,b}* }',
+    alphabet: 'a, b',
+    isRegular: false,
+    theoryNote: 'Pumping inside first half breaks palindrome symmetry.',
+    code: `if (s.length % 2 !== 0) return false;
+if (!/^[ab]+$/.test(s)) return false;
+return s === s.split('').reverse().join('');`,
+  },
+  {
+    id: 'tpl_perfect_square',
+    label: 'aⁿ² (Perfect Square length)',
+    category: 'Non-Regular',
+    description: 'L = { aⁿ² | n ≥ 1 }',
+    alphabet: 'a',
+    isRegular: false,
+    theoryNote: 'Gaps between consecutive squares grow — pumped lengths skip squares.',
+    code: `if (!/^a+$/.test(s)) return false;
+return isPerfectSquare(s.length);`,
+  },
+  {
+    id: 'tpl_prime',
+    label: 'aᵖ (Prime length)',
+    category: 'Non-Regular',
+    description: 'L = { aᵖ | p is prime }',
+    alphabet: 'a',
+    isRegular: false,
+    theoryNote: 'Large pumped lengths are composite.',
+    code: `if (!/^a+$/.test(s)) return false;
+return isPrime(s.length);`,
+  },
+  {
+    id: 'tpl_ww',
+    label: 'ww (Double word)',
+    category: 'Non-Regular',
+    description: 'L = { ww | w ∈ {a,b}* }',
+    alphabet: 'a, b',
+    isRegular: false,
+    theoryNote: 'Pumping first half changes its length so first ≠ second half.',
+    code: `if (s.length % 2 !== 0) return false;
+const n = s.length / 2;
+return s.slice(0, n) === s.slice(n);`,
+  },
+  {
+    id: 'tpl_factorial',
+    label: 'aⁿ! (Factorial length)',
+    category: 'Non-Regular',
+    description: 'L = { aⁿ! | n ≥ 1 }',
+    alphabet: 'a',
+    isRegular: false,
+    theoryNote: 'Factorial gaps grow super-exponentially — pumped lengths skip factorials.',
+    code: `if (!/^a+$/.test(s)) return false;
+return isFactorial(s.length);`,
+  },
+  // REGULAR
+  {
+    id: 'tpl_a_star',
+    label: 'a* (zero or more a\'s)',
+    category: 'Regular',
+    description: 'L = { aⁿ | n ≥ 0 }',
+    alphabet: 'a',
+    isRegular: true,
+    theoryNote: 'One-state DFA. Every xyⁱz stays in L.',
+    code: `return /^a*$/.test(s);`,
+  },
+  {
+    id: 'tpl_ab_star',
+    label: '(ab)* pattern',
+    category: 'Regular',
+    description: 'L = { (ab)ⁿ | n ≥ 0 }',
+    alphabet: 'a, b',
+    isRegular: true,
+    theoryNote: 'Regular — described by regex (ab)*.',
+    code: `return /^(ab)*$/.test(s);`,
+  },
+  {
+    id: 'tpl_ends_b',
+    label: 'Strings ending in b',
+    category: 'Regular',
+    description: 'L = { w ∈ {a,b}* | w ends with b }',
+    alphabet: 'a, b',
+    isRegular: true,
+    theoryNote: 'Regular — accepted by a 2-state DFA.',
+    code: `return s.length > 0 && s.endsWith('b');`,
+  },
+  {
+    id: 'tpl_even_a',
+    label: 'Even number of a\'s',
+    category: 'Regular',
+    description: 'L = { w ∈ {a,b}* | #a(w) is even }',
+    alphabet: 'a, b',
+    isRegular: true,
+    theoryNote: 'Regular — parity-tracking DFA with 2 states.',
+    code: `return countChar(s, 'a') % 2 === 0;`,
+  },
+];
